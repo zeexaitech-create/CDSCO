@@ -8,6 +8,15 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from "recharts";
+import { useState } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { toast } from "sonner";
 
 const pipelineData = [
   { name: "New Drug Applications", value: 1842 },
@@ -64,6 +73,7 @@ function KPICard({ icon: Icon, value, decimals = 0, label, subtext, subtextColor
 
 export default function CommandCentre() {
   const loading = useSkeletonLoader();
+  const [selectedSubmission, setSelectedSubmission] = useState<typeof submissions[0] | null>(null);
 
   if (loading) {
     return (
@@ -154,7 +164,10 @@ export default function CommandCentre() {
                     </div>
                   </td>
                   <td className="py-3">
-                    <button className="flex items-center gap-1 text-xs text-primary border border-primary/30 px-3 py-1 rounded-md hover:bg-primary-light transition-colors">
+                    <button 
+                      onClick={() => setSelectedSubmission(s)}
+                      className="flex items-center gap-1 text-xs text-primary border border-primary/30 px-3 py-1 rounded-md hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95 font-medium"
+                    >
                       <Eye className="h-3 w-3" /> Review
                     </button>
                   </td>
@@ -164,6 +177,103 @@ export default function CommandCentre() {
           </table>
         </div>
       </div>
+
+      <Sheet open={!!selectedSubmission} onOpenChange={(open) => !open && setSelectedSubmission(null)}>
+        <SheetContent className="sm:max-w-xl w-full overflow-y-auto">
+          <SheetHeader className="pb-4 border-b border-border">
+            <SheetTitle className="font-display text-2xl flex items-center gap-2">
+              <span className="text-primary">Submission Review</span>
+            </SheetTitle>
+            <SheetDescription className="text-sm">
+              Detailed analysis and validation report for {selectedSubmission?.id}
+            </SheetDescription>
+          </SheetHeader>
+          
+          {selectedSubmission && (
+            <div className="mt-6 space-y-6">
+              <div className="bg-bg-muted/30 p-4 rounded-xl border border-border/50">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider mb-1">Applicant</h4>
+                    <p className="text-lg font-medium text-foreground">{selectedSubmission.applicant}</p>
+                  </div>
+                  <StatusPill status={selectedSubmission.status} />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-xs font-semibold text-text-muted uppercase mb-1">Drug/Product</h4>
+                    <p className="text-sm font-medium text-foreground">{selectedSubmission.drug}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold text-text-muted uppercase mb-1">Submission Type</h4>
+                    <p className="text-sm font-medium text-foreground">{selectedSubmission.type}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold text-text-muted uppercase mb-1">Date Submitted</h4>
+                    <p className="text-sm font-medium text-foreground">{selectedSubmission.date}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold text-text-muted uppercase mb-1">AI Completeness</h4>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex-1 h-1.5 bg-bg-muted rounded-full overflow-hidden w-24">
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${selectedSubmission.completeness}%` }} />
+                      </div>
+                      <span className="text-xs text-text-muted font-medium">{selectedSubmission.completeness}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="font-display text-lg text-foreground border-b border-border pb-2">AI Analysis Summary</h3>
+                <p className="text-sm text-text-secondary leading-relaxed">
+                  The RegAI model has analyzed this submission for regulatory compliance, data integrity, and completeness. The overall confidence score is high. Minor anomalies detected in section 3.2.P (Impurities) have been flagged for manual verification.
+                </p>
+                
+                <ul className="space-y-2 mt-4">
+                  <li className="flex items-start gap-2 text-sm text-text-secondary">
+                    <CheckCircle className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                    <span>Dossier format validated against eCTD requirements.</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-text-secondary">
+                    <CheckCircle className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                    <span>Clinical trial data consistency check passed.</span>
+                  </li>
+                  {selectedSubmission.status !== "Verified" && (
+                    <li className="flex items-start gap-2 text-sm text-text-secondary">
+                      <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                      <span>Missing signatures on Form 44 annexures.</span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              <div className="flex gap-3 pt-6 border-t border-border">
+                <button 
+                  onClick={() => {
+                    toast.success(`Application ${selectedSubmission.id} Approved successfully!`);
+                    setSelectedSubmission(null);
+                  }}
+                  className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+                >
+                  Approve Application
+                </button>
+                <button 
+                  onClick={() => {
+                    toast.info(`Requesting more info for ${selectedSubmission.id}`);
+                    setSelectedSubmission(null);
+                  }}
+                  className="flex-1 bg-white border border-border text-foreground py-2.5 rounded-lg text-sm font-medium hover:bg-bg-muted transition-colors shadow-sm"
+                >
+                  Request Information
+                </button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
     </DashboardLayout>
   );
 }
