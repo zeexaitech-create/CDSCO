@@ -158,7 +158,7 @@ export default function CommandCentre() {
                 variant="outline" 
                 size="sm" 
                 className="w-full text-xs h-8"
-                onClick={() => navigate("/data-anonymisation")}
+                onClick={() => navigate("/anonymisation")}
               >
                 Open Module
               </Button>
@@ -181,7 +181,7 @@ export default function CommandCentre() {
                 variant="outline" 
                 size="sm" 
                 className="w-full text-xs h-8"
-                onClick={() => navigate("/document-summarisation")}
+                onClick={() => navigate("/summarisation")}
               >
                 Open Module
               </Button>
@@ -204,7 +204,7 @@ export default function CommandCentre() {
                 variant="outline" 
                 size="sm" 
                 className="w-full text-xs h-8"
-                onClick={() => navigate("/completeness-classification")}
+                onClick={() => navigate("/completeness")}
               >
                 Open Module
               </Button>
@@ -227,7 +227,7 @@ export default function CommandCentre() {
                 variant="outline" 
                 size="sm" 
                 className="w-full text-xs h-8"
-                onClick={() => navigate("/document-comparison")}
+                onClick={() => navigate("/comparison")}
               >
                 Open Module
               </Button>
