@@ -3,7 +3,11 @@ import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 import { useSkeletonLoader } from "@/hooks/useSkeletonLoader";
 import { SkeletonBlock } from "@/components/SkeletonBlock";
 import { StatusPill } from "@/components/StatusPill";
-import { TrendingUp, Clock, CheckCircle, AlertTriangle, Brain, Eye } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { TrendingUp, Clock, CheckCircle, AlertTriangle, Brain, Eye, Shield, FileText, ClipboardCheck, GitCompare } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -73,6 +77,7 @@ function KPICard({ icon: Icon, value, decimals = 0, label, subtext, subtextColor
 
 export default function CommandCentre() {
   const loading = useSkeletonLoader();
+  const navigate = useNavigate();
   const [selectedSubmission, setSelectedSubmission] = useState<typeof submissions[0] | null>(null);
 
   if (loading) {
@@ -92,6 +97,178 @@ export default function CommandCentre() {
 
   return (
     <DashboardLayout title="Command Centre">
+      <div className="flex flex-col lg:flex-row gap-8 mb-8">
+        <div className="w-full lg:w-[60%] flex flex-col space-y-4">
+          <div className="font-mono text-xs uppercase text-text-muted">
+            Stage 1 — AI-Driven Regulatory Workflow Automation
+          </div>
+          <h1 className="font-serif text-2xl font-normal text-foreground">
+            Regulatory Intelligence Platform for CDSCO
+          </h1>
+          <p className="text-sm text-text-muted leading-relaxed">
+            Designed to streamline drug approval reviews, SAE monitoring, and document intelligence for CDSCO — reducing manual burden and supporting faster, consistent regulatory decisions.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Badge variant="outline">DPDP Act 2023</Badge>
+            <Badge variant="outline">ICMR Guidelines</Badge>
+            <Badge variant="outline">NDHM Policy</Badge>
+          </div>
+        </div>
+        <div className="w-full lg:w-[40%] grid grid-cols-2 gap-y-8 gap-x-4">
+          <div className="flex flex-col">
+            <span className="text-2xl font-mono text-foreground">1,284</span>
+            <span className="text-xs text-text-muted mt-1">Documents Processed</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-2xl font-mono text-foreground">47,392</span>
+            <span className="text-xs text-text-muted mt-1">PII Entities Redacted</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-2xl font-mono text-foreground">68%</span>
+            <span className="text-xs text-text-muted mt-1">Review Time Reduced</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-2xl font-mono text-foreground">312</span>
+            <span className="text-xs text-text-muted mt-1">SAE Cases Resolved</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Core AI Capabilities */}
+      <div className="mb-8">
+        <div className="flex justify-between items-end mb-4">
+          <h2 className="font-serif text-lg font-normal text-foreground">Core AI Capabilities</h2>
+          <span className="text-xs text-text-muted">Four modules addressing the Stage 1 problem statement</span>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <Card className="border-l-4 border-l-blue-600 flex flex-col h-full">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start mb-2">
+                <Shield className="h-6 w-6 text-blue-600" />
+                <Badge variant="secondary" className="text-[10px] uppercase font-mono tracking-wider">Active — Demo Mode</Badge>
+              </div>
+              <h3 className="font-medium text-base text-foreground">Data Anonymisation</h3>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between pt-0 text-xs text-text-muted">
+              <p className="mb-4 leading-relaxed">
+                Hybrid NLP and rule-based PII detection. Pseudonymisation and irreversible anonymisation per DPDP Act 2023.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-xs h-8"
+                onClick={() => navigate("/data-anonymisation")}
+              >
+                Open Module
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-green-600 flex flex-col h-full">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start mb-2">
+                <FileText className="h-6 w-6 text-green-600" />
+                <Badge variant="secondary" className="text-[10px] uppercase font-mono tracking-wider">Active — Demo Mode</Badge>
+              </div>
+              <h3 className="font-medium text-base text-foreground">Document Summarisation</h3>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between pt-0 text-xs text-text-muted">
+              <p className="mb-4 leading-relaxed">
+                Processes SUGAM checklists, SAE narrations, and meeting transcripts into standardised reviewer-ready summaries.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-xs h-8"
+                onClick={() => navigate("/document-summarisation")}
+              >
+                Open Module
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-amber-600 flex flex-col h-full">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start mb-2">
+                <ClipboardCheck className="h-6 w-6 text-amber-600" />
+                <Badge variant="secondary" className="text-[10px] uppercase font-mono tracking-wider">Active — Demo Mode</Badge>
+              </div>
+              <h3 className="font-medium text-base text-foreground">Completeness & Classification</h3>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between pt-0 text-xs text-text-muted">
+              <p className="mb-4 leading-relaxed">
+                Verifies submissions against CDSCO checklists. Classifies SAE severity — death, disability, hospitalisation. Detects duplicates.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-xs h-8"
+                onClick={() => navigate("/completeness-classification")}
+              >
+                Open Module
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-rose-600 flex flex-col h-full">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start mb-2">
+                <GitCompare className="h-6 w-6 text-rose-600" />
+                <Badge variant="secondary" className="text-[10px] uppercase font-mono tracking-wider">Active — Demo Mode</Badge>
+              </div>
+              <h3 className="font-medium text-base text-foreground">Document Comparison</h3>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col justify-between pt-0 text-xs text-text-muted">
+              <p className="mb-4 leading-relaxed">
+                Detects substantive changes between filing versions. Generates structured change reports with clinical significance rating.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full text-xs h-8"
+                onClick={() => navigate("/document-comparison")}
+              >
+                Open Module
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="bg-bg-muted/40 border border-border rounded-lg p-4 mt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="text-green-600 shrink-0" size={14} />
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-foreground">DPDP Act 2023</span>
+                <span className="text-xs text-text-muted">Data protection standard</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="text-green-600 shrink-0" size={14} />
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-foreground">ICMR Guidelines</span>
+                <span className="text-xs text-text-muted">Clinical ethics framework</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="text-green-600 shrink-0" size={14} />
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-foreground">NDHM Health Data Policy</span>
+                <span className="text-xs text-text-muted">Health interoperability</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <CheckCircle className="text-green-600 shrink-0" size={14} />
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-foreground">CDSCO Standards</span>
+                <span className="text-xs text-text-muted">Regulatory compliance</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* KPI Strip */}
       <div className="grid grid-cols-5 gap-4 mb-6">
         <KPICard icon={TrendingUp} value={4827} label="Submissions This Quarter" subtext="+12.4% vs last quarter" subtextColor="green" />
