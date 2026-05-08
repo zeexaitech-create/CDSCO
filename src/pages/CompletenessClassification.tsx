@@ -1,182 +1,249 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useSkeletonLoader } from "@/hooks/useSkeletonLoader";
 import { SkeletonBlock } from "@/components/SkeletonBlock";
-import { CheckCircle, XCircle, AlertTriangle as WarnIcon } from "lucide-react";
-
-type FieldStatus = "valid" | "missing" | "warning";
-
-const fields: { name: string; status: FieldStatus; rule?: string; action?: string }[] = [
-  { name: "Applicant Name", status: "valid" },
-  { name: "Drug Name", status: "valid" },
-  { name: "Generic Name", status: "valid" },
-  { name: "Dosage Form", status: "valid" },
-  { name: "Strength", status: "valid" },
-  { name: "Route of Administration", status: "valid" },
-  { name: "Shelf Life", status: "missing", rule: "Rule 122B of D&C Act", action: "Request shelf life data from applicant" },
-  { name: "Manufacturing Site", status: "valid" },
-  { name: "GMP Certificate", status: "warning", rule: "Schedule M", action: "Verify certificate validity — expiry date unclear" },
-  { name: "Clinical Trial Reference", status: "valid" },
-  { name: "Pharmacovigilance Plan", status: "missing", rule: "Schedule Y, Rule 122DAB", action: "Request PV plan submission within 15 days" },
-  { name: "Labelling Drafts", status: "missing", rule: "Rule 96", action: "Request draft labels in Schedule D format" },
-  { name: "Package Insert", status: "valid" },
-  { name: "SmPC", status: "missing", rule: "CDSCO Guidance 2023", action: "SmPC in CTD Module 1.3 format required" },
-  { name: "Patent Status", status: "valid" },
-  { name: "Bioequivalence Data", status: "missing", rule: "Rule 122E", action: "BE study data with pivotal study report required" },
-];
-
-const duplicateData = [
-  { id: "NDA-2024-0788", similarity: 91.2, patient: "Match", drug: "Match", dateRange: "Jan–Mar 2024" },
-  { id: "NDA-2024-0312", similarity: 87.4, patient: "Partial", drug: "Match", dateRange: "Dec 2023–Feb 2024" },
-  { id: "NDA-2023-0951", similarity: 62.1, patient: "No Match", drug: "Match", dateRange: "Sep–Nov 2023" },
-  { id: "NDA-2024-0102", similarity: 44.8, patient: "No Match", drug: "Partial", dateRange: "Jan–Feb 2024" },
-];
-
-const validCount = fields.filter((f) => f.status === "valid").length;
-const completeness = Math.round((validCount / fields.length) * 100);
-const missingCount = fields.filter((f) => f.status === "missing").length;
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ClipboardCheck, AlertCircle, CheckCircle, XCircle } from "lucide-react";
+import { toast } from "sonner";
 
 export default function CompletenessClassification() {
   const loading = useSkeletonLoader();
-  const [tab, setTab] = useState<"missing" | "classification" | "duplicate">("missing");
-  const [animatedScore, setAnimatedScore] = useState(0);
+  const [isAssessing, setIsAssessing] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  
+  const [isClassifying, setIsClassifying] = useState(false);
+  const [showClassify, setShowClassify] = useState(false);
 
-  useEffect(() => {
-    const duration = 1200;
-    const start = performance.now();
-    const step = (now: number) => {
-      const progress = Math.min((now - start) / duration, 1);
-      setAnimatedScore(Math.round(progress * completeness));
-      if (progress < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }, []);
+  const runAssessment = () => {
+    setIsAssessing(true);
+    setTimeout(() => {
+      setIsAssessing(false);
+      setShowResults(true);
+    }, 1000);
+  };
+
+  const runClassification = () => {
+    setIsClassifying(true);
+    setTimeout(() => {
+      setIsClassifying(false);
+      setShowClassify(true);
+    }, 1000);
+  };
 
   if (loading) {
     return (
       <DashboardLayout title="Completeness & Classification">
-        <div className="flex gap-6"><SkeletonBlock className="w-72 h-[500px]" /><SkeletonBlock className="flex-1 h-[500px]" /></div>
+        <SkeletonBlock className="h-[600px] mb-6" />
       </DashboardLayout>
     );
   }
 
-  const circumference = 2 * Math.PI * 54;
-  const offset = circumference - (animatedScore / 100) * circumference;
-
   return (
     <DashboardLayout title="Completeness & Classification">
-      <p className="text-sm text-text-secondary mb-6">Completeness Assessment and Case Classification</p>
-      <div className="flex gap-6">
-        {/* Left sidebar */}
-        <div className="w-72 shrink-0 bg-bg-surface border border-border rounded-lg p-5">
-          <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Field Validation Status</h3>
-          <ul className="space-y-1.5">
-            {fields.map((f) => (
-              <li key={f.name} className="flex items-center gap-2 text-sm">
-                {f.status === "valid" && <CheckCircle className="h-4 w-4 text-success shrink-0" />}
-                {f.status === "missing" && <XCircle className="h-4 w-4 text-destructive shrink-0" />}
-                {f.status === "warning" && <WarnIcon className="h-4 w-4 text-warning shrink-0" />}
-                <span className={f.status === "valid" ? "text-text-secondary" : f.status === "missing" ? "text-destructive" : "text-warning"}>
-                  {f.name}
-                </span>
-              </li>
-            ))}
-          </ul>
-          {/* Circular progress */}
-          <div className="mt-6 flex flex-col items-center">
-            <svg className="w-32 h-32" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="54" fill="none" stroke="#EEF1F6" strokeWidth="8" />
-              <circle cx="60" cy="60" r="54" fill="none" stroke={animatedScore >= 80 ? "#2E7D5E" : "#B45309"} strokeWidth="8"
-                strokeDasharray={circumference} strokeDashoffset={offset}
-                strokeLinecap="round" transform="rotate(-90 60 60)" className="transition-all duration-300" />
-              <text x="60" y="60" textAnchor="middle" dominantBaseline="central" className="fill-foreground text-2xl font-bold" style={{ fontFamily: "DM Serif Display" }}>
-                {animatedScore}%
-              </text>
-            </svg>
-            <p className="text-sm text-warning font-semibold mt-2">Application Incomplete</p>
-            <p className="text-xs text-text-muted">{missingCount} Fields Missing</p>
-          </div>
-        </div>
+      <div className="text-xs text-text-muted mb-2 uppercase tracking-wider">Completeness Assessment and Case Classification</div>
+      <h1 className="font-serif text-2xl font-normal text-foreground mb-2">Completeness Assessment and Case Classification</h1>
+      <p className="text-sm text-text-muted mb-8 max-w-2xl">
+        Verifies submissions against CDSCO checklists. Classifies SAE severity. Detects duplicate case submissions.
+      </p>
 
-        {/* Right main */}
-        <div className="flex-1">
-          <div className="flex border-b border-border mb-4">
-            {[
-              { key: "missing" as const, label: "Missing Fields Report" },
-              { key: "classification" as const, label: "Case Classification" },
-              { key: "duplicate" as const, label: "Duplicate Detection" },
-            ].map((t) => (
-              <button key={t.key} onClick={() => setTab(t.key)}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t.key ? "border-primary text-primary" : "border-transparent text-text-muted hover:text-text-secondary"}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          {tab === "missing" && (
-            <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b border-border text-left text-text-muted text-xs uppercase tracking-wider">
-                  <th className="p-3">Field</th><th className="p-3">Regulation</th><th className="p-3">Recommended Action</th>
-                </tr></thead>
-                <tbody>
-                  {fields.filter((f) => f.status !== "valid").map((f) => (
-                    <tr key={f.name} className="border-b border-border last:border-0">
-                      <td className="p-3 font-medium text-foreground">{f.name}</td>
-                      <td className="p-3 text-text-muted font-mono text-xs">{f.rule}</td>
-                      <td className="p-3 text-text-secondary">{f.action}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {tab === "classification" && (
-            <div className="bg-bg-surface border-l-4 border-destructive rounded-lg p-6 border border-border">
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  ["Primary Classification", "DEATH"],
-                  ["Secondary Classification", "POSSIBLY DRUG-RELATED"],
-                  ["Severity Score", "9.2 / 10"],
-                  ["WHO-UMC Causality", "Probable"],
-                  ["Duplicate Detection", "No duplicate found (checked against 4,827 records)"],
-                  ["Priority", "CRITICAL — Assign within 24 hours"],
-                ].map(([k, v]) => (
-                  <div key={k}>
-                    <dt className="text-xs font-semibold text-text-muted uppercase tracking-wider">{k}</dt>
-                    <dd className={`text-sm font-semibold mt-0.5 ${v.includes("DEATH") || v.includes("CRITICAL") ? "text-destructive" : "text-foreground"}`}>{v}</dd>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {tab === "duplicate" && (
-            <div className="bg-bg-surface border border-border rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b border-border text-left text-text-muted text-xs uppercase tracking-wider">
-                  <th className="p-3">Submission ID</th><th className="p-3">Similarity</th><th className="p-3">Patient Match</th><th className="p-3">Drug Match</th><th className="p-3">Date Range</th><th className="p-3">Status</th>
-                </tr></thead>
-                <tbody>
-                  {duplicateData.map((d) => (
-                    <tr key={d.id} className="border-b border-border last:border-0">
-                      <td className="p-3 font-mono text-xs text-primary">{d.id}</td>
-                      <td className="p-3">{d.similarity}%</td>
-                      <td className="p-3">{d.patient}</td>
-                      <td className="p-3">{d.drug}</td>
-                      <td className="p-3 text-text-muted">{d.dateRange}</td>
-                      <td className="p-3">
-                        {d.similarity > 85 ? <span className="text-xs font-semibold text-destructive">Potential Duplicate</span> : <span className="text-xs text-text-muted">Low Risk</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+      {/* 3-input row */}
+      <div className="flex flex-col md:flex-row gap-4 mb-8">
+        <select className="flex-1 text-sm border border-border rounded-md px-3 py-2 bg-bg-surface text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
+          <option>New Drug Application (NDA)</option>
+          <option>Clinical Trial Application</option>
+        </select>
+        <input 
+          type="text" 
+          defaultValue="NDA-2024-0847" 
+          className="flex-1 text-sm border border-border rounded-md px-3 py-2 bg-bg-surface text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+        <Button onClick={runAssessment} disabled={isAssessing} className="flex-1 gap-2">
+          <ClipboardCheck className="h-4 w-4" />
+          {isAssessing ? "Running Assessment..." : "Run Assessment"}
+        </Button>
       </div>
+
+      {showResults && (
+        <div className="animate-fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* LEFT CARD */}
+            <Card className="flex flex-col border border-border shadow-sm">
+              <CardHeader className="border-b border-border pb-4 mb-4">
+                <h2 className="font-semibold text-foreground">Completeness Assessment NDA-2024-0847</h2>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <span className="text-3xl font-mono text-foreground">84/100</span>
+                    <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200">Conditional Review</Badge>
+                  </div>
+                </div>
+                
+                <div className="w-full bg-bg-muted rounded-full h-2">
+                  <div className="bg-amber-500 h-2 rounded-full" style={{ width: '84%' }}></div>
+                </div>
+
+                <div className="space-y-4">
+                  {[
+                    { name: "Administrative", score: 100, label: "Complete", color: "green" },
+                    { name: "Drug Substance", score: 100, label: "Complete", color: "green" },
+                    { name: "Drug Product", score: 72, label: "Incomplete", color: "amber" },
+                    { name: "Clinical Data", score: 95, label: "Complete", color: "green" },
+                    { name: "Risk Management", score: 90, label: "Complete", color: "green" },
+                  ].map((s) => (
+                    <div key={s.name}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-foreground">{s.name}</span>
+                        <span className="text-text-muted">{s.score}% <Badge variant={s.color === "green" ? "secondary" : "outline"} className={s.color === "green" ? "bg-green-100 text-green-800 border-transparent hover:bg-green-200 ml-2" : "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 ml-2"}>{s.label}</Badge></span>
+                      </div>
+                      <div className="w-full bg-bg-muted rounded-full h-1.5">
+                        <div className={`h-1.5 rounded-full ${s.color === "green" ? "bg-green-500" : "bg-amber-500"}`} style={{ width: `${s.score}%` }}></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-2">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">Missing Items</h3>
+                  <ul className="space-y-3">
+                    <li className="flex items-start gap-2 text-sm">
+                      <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      <div className="flex-1 flex justify-between items-start gap-2">
+                        <span className="text-foreground leading-tight">Form 12 — Manufacturing Licence</span>
+                        <Badge variant="destructive" className="shrink-0 text-[10px]">Mandatory</Badge>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm">
+                      <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      <div className="flex-1 flex justify-between items-start gap-2">
+                        <span className="text-foreground leading-tight">Section 3.2.P.8.3 — Stability Commitments</span>
+                        <Badge variant="destructive" className="shrink-0 text-[10px]">Mandatory</Badge>
+                      </div>
+                    </li>
+                    <li className="flex items-start gap-2 text-sm">
+                      <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      <div className="flex-1 flex justify-between items-start gap-2">
+                        <span className="text-foreground leading-tight">Section 3.2.P.5.6 — Dissolution Data Month 24</span>
+                        <Badge variant="outline" className="shrink-0 text-[10px]">Conditional</Badge>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="flex gap-3 mt-auto pt-4 border-t border-border">
+                  <Button className="flex-1 text-xs" onClick={() => toast.success("Completeness report generated for NDA-2024-0847")}>Generate Report</Button>
+                  <Button variant="outline" className="flex-1 text-xs" onClick={() => toast("Flagged and assigned to senior reviewer.")}>Flag for Review</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* RIGHT CARD */}
+            <Card className="flex flex-col border border-border shadow-sm">
+              <CardHeader className="border-b border-border pb-4 mb-4">
+                <h2 className="font-semibold text-foreground">SAE Severity Classification</h2>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-6">
+                <div className="flex gap-3">
+                  <input 
+                    type="text" 
+                    defaultValue="SAE-2024-MH-1847" 
+                    className="flex-1 text-sm border border-border rounded-md px-3 py-2 bg-bg-surface text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <Button onClick={runClassification} disabled={isClassifying} variant="secondary">
+                    {isClassifying ? "..." : "Classify"}
+                  </Button>
+                </div>
+
+                {showClassify && (
+                  <div className="flex flex-col gap-6 animate-fade-in flex-1">
+                    <div className="flex flex-col items-center justify-center py-8 bg-bg-muted/50 rounded-lg border border-border">
+                      <span className="text-2xl font-mono text-foreground mb-3">Hospitalisation</span>
+                      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-200">Non-Fatal</Badge>
+                    </div>
+
+                    <div className="space-y-4 flex-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2"><XCircle className="h-4 w-4 text-destructive" /> <span className="text-foreground">Death</span></div>
+                        <Badge variant="outline" className="text-text-muted">Not Applicable</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2"><XCircle className="h-4 w-4 text-destructive" /> <span className="text-foreground">Permanent Disability</span></div>
+                        <Badge variant="outline" className="text-text-muted">Not Applicable</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-amber-500" /> <span className="text-foreground font-medium">Hospitalisation</span></div>
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-200">Confirmed</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2"><AlertCircle className="h-4 w-4 text-amber-500" /> <span className="text-foreground">Other Serious</span></div>
+                        <Badge variant="outline" className="text-amber-700 border-amber-200">Concomitant Noted</Badge>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center bg-bg-muted/30 p-3 rounded-md border border-border">
+                      <div className="text-xs"><span className="text-text-muted">Causality:</span> <span className="font-medium text-foreground">Probable WHO-UMC</span></div>
+                      <div className="text-xs"><span className="text-text-muted">Score:</span> <span className="font-medium text-foreground">7.2/10</span></div>
+                      <div className="text-xs"><span className="text-text-muted">Date:</span> <span className="font-medium text-foreground">22-Apr-2024</span></div>
+                    </div>
+
+                    <Button className="w-full mt-auto" onClick={() => toast.success("Case classified and submitted.")}>
+                      Submit to Review Queue
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="mb-6 border border-border shadow-sm">
+            <CardHeader className="border-b border-border pb-4 mb-0">
+              <h2 className="font-semibold text-foreground">Duplicate Detection — Last 90 Days</h2>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-bg-muted/30">
+                    <tr className="border-b border-border text-left text-text-muted text-xs uppercase tracking-wider">
+                      <th className="px-6 py-4 font-medium">Case Pair</th>
+                      <th className="px-6 py-4 font-medium">Similarity</th>
+                      <th className="px-6 py-4 font-medium">Status</th>
+                      <th className="px-6 py-4 font-medium text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border last:border-0 hover:bg-bg-muted/10 transition-colors">
+                      <td className="px-6 py-4 text-foreground font-mono text-xs">MH-1847 vs MH-1831</td>
+                      <td className="px-6 py-4 text-text-secondary">23%</td>
+                      <td className="px-6 py-4"><Badge className="bg-green-100 text-green-800 hover:bg-green-200 border border-green-200">No Duplicate</Badge></td>
+                      <td className="px-6 py-4 text-right">—</td>
+                    </tr>
+                    <tr className="border-b border-border last:border-0 hover:bg-bg-muted/10 transition-colors">
+                      <td className="px-6 py-4 text-foreground font-mono text-xs">DL-0923 vs DL-0891</td>
+                      <td className="px-6 py-4 text-text-secondary">87%</td>
+                      <td className="px-6 py-4"><Badge variant="destructive">Review Required</Badge></td>
+                      <td className="px-6 py-4 text-right"><Button variant="outline" size="sm" className="h-8 text-xs">Investigate</Button></td>
+                    </tr>
+                    <tr className="border-b border-border last:border-0 hover:bg-bg-muted/10 transition-colors">
+                      <td className="px-6 py-4 text-foreground font-mono text-xs">KA-0445 vs KA-0431</td>
+                      <td className="px-6 py-4 text-text-secondary">41%</td>
+                      <td className="px-6 py-4"><Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-200">Low Probability</Badge></td>
+                      <td className="px-6 py-4 text-right">—</td>
+                    </tr>
+                    <tr className="border-b border-border last:border-0 hover:bg-bg-muted/10 transition-colors">
+                      <td className="px-6 py-4 text-foreground font-mono text-xs">MH-1902 vs MH-1847</td>
+                      <td className="px-6 py-4 text-text-secondary">19%</td>
+                      <td className="px-6 py-4"><Badge className="bg-green-100 text-green-800 hover:bg-green-200 border border-green-200">No Duplicate</Badge></td>
+                      <td className="px-6 py-4 text-right">—</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
